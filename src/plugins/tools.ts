@@ -126,7 +126,7 @@ export function resolvePluginTools(params: {
     workspaceDir: params.context.workspaceDir,
   });
   const normalized = normalizePluginsConfig(context.config.plugins);
-  if (!normalized.enabled) {
+  if (!normalized.enabled || baseConfig.downstream?.skipRuntimePluginDiscovery) {
     return [];
   }
 
