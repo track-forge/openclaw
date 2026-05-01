@@ -1051,6 +1051,12 @@ export const OpenClawSchema = z
       )
       .optional(),
     proxy: ProxyConfigSchema,
+    downstream: z
+      .object({
+        skipRuntimePluginDiscovery: z.boolean().optional(),
+      })
+      .strict()
+      .optional(),
   })
   .strict()
   .superRefine((cfg, ctx) => {
