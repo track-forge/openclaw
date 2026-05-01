@@ -116,6 +116,9 @@ export function resolveProviderHookPlugin(params: {
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
 }): ProviderPlugin | undefined {
+  if (params.config?.downstream?.skipRuntimePluginDiscovery) {
+    return undefined;
+  }
   return (
     resolveProviderRuntimePlugin(params) ??
     resolveProviderPluginsForHooks({
