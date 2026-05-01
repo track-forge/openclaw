@@ -451,6 +451,9 @@ async function runProviderCatalogWithTimeout(
 export async function resolveImplicitProviders(
   params: ImplicitProviderParams,
 ): Promise<NonNullable<OpenClawConfig["models"]>["providers"]> {
+  if (params.config?.downstream?.skipRuntimePluginDiscovery) {
+    return {};
+  }
   const providers: Record<string, ProviderConfig> = {};
   const env = params.env ?? process.env;
   let authStore: ReturnType<typeof ensureAuthProfileStore> | undefined;

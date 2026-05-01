@@ -140,6 +140,12 @@ export type OpenClawConfig = {
   mcp?: McpConfig;
   /** Network-level SSRF protection via an operator-managed forward proxy. */
   proxy?: ProxyConfig;
+  /** Downstream (track-forge) config overrides for fork-specific behavior. */
+  downstream?: {
+    /** Skip runtime plugin discovery on first message. Eliminates ~28s of
+     *  plugin loading for deployments using only proxy/custom providers. */
+    skipRuntimePluginDiscovery?: boolean;
+  };
 };
 
 declare const openClawConfigStateBrand: unique symbol;

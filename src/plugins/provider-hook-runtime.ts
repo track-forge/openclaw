@@ -84,6 +84,9 @@ export function resolveProviderRuntimePlugin(params: {
   bundledProviderVitestCompat?: boolean;
   installBundledRuntimeDeps?: boolean;
 }): ProviderPlugin | undefined {
+  if (params.config?.downstream?.skipRuntimePluginDiscovery) {
+    return undefined;
+  }
   const apiOwnerHint = resolveProviderConfigApiOwnerHint({
     provider: params.provider,
     config: params.config,
