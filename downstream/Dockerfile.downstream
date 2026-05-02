@@ -16,9 +16,9 @@ FROM ${BASE_IMAGE}
 # USER node, WORKDIR /app, ENV, HEALTHCHECK, CMD all inherited from base.
 # /var/lib/openclaw/plugin-runtime-deps is already created + owned by node:node.
 #
-# `plugins doctor --repair` scans dist/extensions/ for all bundled plugin
+# `plugins deps --repair` scans dist/extensions/ for all bundled plugin
 # manifests, collects their runtime deps, and pnpm-installs them into the
 # staging directory. Same flow the gateway runs on startup — but baked into
 # the image so every container starts with deps pre-materialized.
 RUN OPENCLAW_PLUGIN_STAGE_DIR=/var/lib/openclaw/plugin-runtime-deps \
-    node openclaw.mjs plugins doctor --repair
+    node openclaw.mjs plugins deps --repair
