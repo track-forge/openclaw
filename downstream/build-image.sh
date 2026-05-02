@@ -2,16 +2,15 @@
 # downstream/build-image.sh — Build an OpenClaw container image from a
 # downstream branch and push it to a local/private registry.
 #
-# Two-stage build:
-#   1. Base: upstream multi-stage Dockerfile (unchanged)
-#   2. Overlay: downstream/Dockerfile.downstream bakes bundled plugin
-#      runtime deps into the image so the gateway skips pnpm at startup
+# By default builds a single-stage image from the upstream Dockerfile.
+# Pass --overlay to add a second stage via downstream/Dockerfile.downstream
+# for any downstream-specific image customizations.
 #
 # Usage:
-#   ./downstream/build-image.sh                          # defaults
-#   ./downstream/build-image.sh --tag v2026.4.29-tf.1    # custom tag
+#   ./downstream/build-image.sh                          # upstream image only
+#   ./downstream/build-image.sh --tag v2026.5.2xp0-tf.1  # custom tag
 #   ./downstream/build-image.sh --push                   # build + push
-#   ./downstream/build-image.sh --skip-overlay           # vanilla upstream only
+#   ./downstream/build-image.sh --overlay                # add downstream overlay
 #   IMAGE_REPO=my.registry/openclaw ./downstream/build-image.sh
 #
 # Environment:
@@ -32,7 +31,7 @@ BRANCH="$(git -C "$REPO_ROOT" rev-parse --abbrev-ref HEAD)"
 IMAGE_TAG="${IMAGE_TAG:-downstream-${SHORT_SHA}}"
 EXTENSIONS="${EXTENSIONS:-}"
 PUSH=0
-SKIP_OVERLAY=0
+OVERLAY=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -41,9 +40,9 @@ while [[ $# -gt 0 ]]; do
     --repo)   IMAGE_REPO="$2"; shift 2 ;;
     --builder) BUILDER="$2"; shift 2 ;;
     --extensions) EXTENSIONS="$2"; shift 2 ;;
-    --skip-overlay) SKIP_OVERLAY=1; shift ;;
+    --overlay) OVERLAY=1; shift ;;
     -h|--help)
-      echo "Usage: $0 [--tag TAG] [--repo REPO] [--push] [--builder podman|docker] [--extensions 'ext1 ext2'] [--skip-overlay]"
+      echo "Usage: $0 [--tag TAG] [--repo REPO] [--push] [--builder podman|docker] [--extensions 'ext1 ext2'] [--overlay]"
       exit 0
       ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
@@ -61,18 +60,18 @@ echo "    builder:    ${BUILDER}"
 if [ -n "$EXTENSIONS" ]; then
   echo "    extensions: ${EXTENSIONS}"
 fi
-if [ "$SKIP_OVERLAY" -eq 1 ]; then
-  echo "    overlay:    skipped (vanilla upstream)"
+if [ "$OVERLAY" -eq 1 ]; then
+  echo "    overlay:    enabled (downstream Dockerfile)"
 else
-  echo "    overlay:    enabled (baked plugin runtime deps)"
+  echo "    overlay:    off (default)"
 fi
 echo ""
 
 # ── Stage 1: Base image (upstream Dockerfile) ──────────────────
-if [ "$SKIP_OVERLAY" -eq 1 ]; then
-  STAGE1_TAG="$FULL_IMAGE"
-else
+if [ "$OVERLAY" -eq 1 ]; then
   STAGE1_TAG="$BASE_IMAGE"
+else
+  STAGE1_TAG="$FULL_IMAGE"
 fi
 
 BUILD_ARGS=(
@@ -87,8 +86,8 @@ BUILD_ARGS=(
 echo "==> Stage 1: Building base image → ${STAGE1_TAG}"
 "$BUILDER" build "${BUILD_ARGS[@]}" "$REPO_ROOT"
 
-# ── Stage 2: Overlay (bake plugin runtime deps) ───────────────
-if [ "$SKIP_OVERLAY" -eq 0 ]; then
+# ── Stage 2: Overlay (opt-in downstream customizations) ──────
+if [ "$OVERLAY" -eq 1 ]; then
   echo ""
   echo "==> Stage 2: Building overlay (plugin runtime deps) → ${FULL_IMAGE}"
   "$BUILDER" build \
@@ -104,7 +103,7 @@ fi
 
 echo ""
 echo "==> Built: ${FULL_IMAGE}"
-if [ "$SKIP_OVERLAY" -eq 0 ]; then
+if [ "$OVERLAY" -eq 1 ]; then
   echo "    base:  ${BASE_IMAGE}"
 fi
 
