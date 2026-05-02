@@ -2,12 +2,16 @@
 # downstream/build-image.sh — Build an OpenClaw container image from a
 # downstream branch and push it to a local/private registry.
 #
-# Uses the upstream multi-stage Dockerfile unchanged. Podman-native.
+# Two-stage build:
+#   1. Base: upstream multi-stage Dockerfile (unchanged)
+#   2. Overlay: downstream/Dockerfile.downstream bakes bundled plugin
+#      runtime deps into the image so the gateway skips pnpm at startup
 #
 # Usage:
 #   ./downstream/build-image.sh                          # defaults
 #   ./downstream/build-image.sh --tag v2026.4.29-tf.1    # custom tag
 #   ./downstream/build-image.sh --push                   # build + push
+#   ./downstream/build-image.sh --skip-overlay           # vanilla upstream only
 #   IMAGE_REPO=my.registry/openclaw ./downstream/build-image.sh
 #
 # Environment:
@@ -28,6 +32,7 @@ BRANCH="$(git -C "$REPO_ROOT" rev-parse --abbrev-ref HEAD)"
 IMAGE_TAG="${IMAGE_TAG:-downstream-${SHORT_SHA}}"
 EXTENSIONS="${EXTENSIONS:-}"
 PUSH=0
+SKIP_OVERLAY=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -36,8 +41,9 @@ while [[ $# -gt 0 ]]; do
     --repo)   IMAGE_REPO="$2"; shift 2 ;;
     --builder) BUILDER="$2"; shift 2 ;;
     --extensions) EXTENSIONS="$2"; shift 2 ;;
+    --skip-overlay) SKIP_OVERLAY=1; shift ;;
     -h|--help)
-      echo "Usage: $0 [--tag TAG] [--repo REPO] [--push] [--builder podman|docker] [--extensions 'ext1 ext2']"
+      echo "Usage: $0 [--tag TAG] [--repo REPO] [--push] [--builder podman|docker] [--extensions 'ext1 ext2'] [--skip-overlay]"
       exit 0
       ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
@@ -45,6 +51,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 FULL_IMAGE="${IMAGE_REPO}:${IMAGE_TAG}"
+BASE_IMAGE="${IMAGE_REPO}:${IMAGE_TAG}-base"
 
 echo "==> Building OpenClaw downstream image"
 echo "    branch:     ${BRANCH}"
@@ -54,21 +61,52 @@ echo "    builder:    ${BUILDER}"
 if [ -n "$EXTENSIONS" ]; then
   echo "    extensions: ${EXTENSIONS}"
 fi
+if [ "$SKIP_OVERLAY" -eq 1 ]; then
+  echo "    overlay:    skipped (vanilla upstream)"
+else
+  echo "    overlay:    enabled (baked plugin runtime deps)"
+fi
 echo ""
+
+# ── Stage 1: Base image (upstream Dockerfile) ──────────────────
+if [ "$SKIP_OVERLAY" -eq 1 ]; then
+  STAGE1_TAG="$FULL_IMAGE"
+else
+  STAGE1_TAG="$BASE_IMAGE"
+fi
 
 BUILD_ARGS=(
   --file "${REPO_ROOT}/Dockerfile"
-  --tag "${FULL_IMAGE}"
+  --tag "${STAGE1_TAG}"
   --build-arg "OPENCLAW_EXTENSIONS=${EXTENSIONS}"
   --label "org.opencontainers.image.source=https://github.com/track-forge/openclaw"
   --label "org.opencontainers.image.revision=${SHORT_SHA}"
   --label "dev.trackforge.branch=${BRANCH}"
 )
 
+echo "==> Stage 1: Building base image → ${STAGE1_TAG}"
 "$BUILDER" build "${BUILD_ARGS[@]}" "$REPO_ROOT"
+
+# ── Stage 2: Overlay (bake plugin runtime deps) ───────────────
+if [ "$SKIP_OVERLAY" -eq 0 ]; then
+  echo ""
+  echo "==> Stage 2: Building overlay (plugin runtime deps) → ${FULL_IMAGE}"
+  "$BUILDER" build \
+    --file "${SCRIPT_DIR}/Dockerfile.downstream" \
+    --tag "${FULL_IMAGE}" \
+    --build-arg "BASE_IMAGE=${STAGE1_TAG}" \
+    --label "org.opencontainers.image.source=https://github.com/track-forge/openclaw" \
+    --label "org.opencontainers.image.revision=${SHORT_SHA}" \
+    --label "dev.trackforge.branch=${BRANCH}" \
+    --label "dev.trackforge.overlay=plugin-runtime-deps" \
+    "$REPO_ROOT"
+fi
 
 echo ""
 echo "==> Built: ${FULL_IMAGE}"
+if [ "$SKIP_OVERLAY" -eq 0 ]; then
+  echo "    base:  ${BASE_IMAGE}"
+fi
 
 if [ "$PUSH" -eq 1 ]; then
   echo "==> Pushing ${FULL_IMAGE}"
