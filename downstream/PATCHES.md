@@ -14,12 +14,13 @@ Updated each time the patch set changes.
 
 ## Active patches
 
-| Patch                                           | Branches         | Status     | Upstream                                                  |
-| ----------------------------------------------- | ---------------- | ---------- | --------------------------------------------------------- |
-| downstream fork README and branch strategy      | main, v2026.4.29 | active     | n/a (docs-only, not upstreamed)                           |
-| downstream container image build script         | main, v2026.4.29 | active     | n/a (scripts-only, not upstreamed)                        |
-| track-forge versioning convention docs          | main, v2026.4.29 | active     | n/a (docs-only, not upstreamed)                           |
-| `plugins.bundledMode: "respect-allow"` backport | v2026.4.29       | upstreamed | [#76085](https://github.com/openclaw/openclaw/pull/76085) |
+| Patch                                                     | Branches         | Status     | Upstream                                                  |
+| --------------------------------------------------------- | ---------------- | ---------- | --------------------------------------------------------- |
+| downstream fork README and branch strategy                | main, v2026.4.29 | active     | n/a (docs-only, not upstreamed)                           |
+| downstream container image build script                   | main, v2026.4.29 | active     | n/a (scripts-only, not upstreamed)                        |
+| track-forge versioning convention docs                    | main, v2026.4.29 | active     | n/a (docs-only, not upstreamed)                           |
+| downstream overlay Dockerfile (baked plugin runtime deps) | main, v2026.4.29 | active     | n/a (tooling-only, not upstreamed)                        |
+| `plugins.bundledMode: "respect-allow"` backport           | v2026.4.29       | upstreamed | [#76085](https://github.com/openclaw/openclaw/pull/76085) |
 
 ## Retired patches
 
