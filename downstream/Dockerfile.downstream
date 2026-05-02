@@ -1,24 +1,21 @@
-# downstream/Dockerfile.downstream — Overlay that bakes bundled plugin
-# runtime deps into the image so the gateway skips pnpm at startup.
+# downstream/Dockerfile.downstream — Overlay for downstream-specific image
+# customizations on top of the upstream base image.
 #
 # Build the upstream image first, then build this FROM it:
 #   podman build --tag openclaw:base -f Dockerfile .
 #   podman build --tag openclaw:final -f downstream/Dockerfile.downstream \
 #     --build-arg BASE_IMAGE=openclaw:base .
 #
-# At runtime, the gateway fast-path (isRuntimeDepsPlanMaterialized) sees all
-# deps already present and returns early — no pnpm install, no EROFS on
-# read-only mounts, instant startup.
+# History:
+#   On upstream <= v2026.4.29, this overlay baked bundled plugin runtime deps
+#   into the image via `plugins deps --repair` to avoid runtime pnpm installs.
+#   As of upstream main (ed8f50f240, 2026-05-01), the runtime dep install
+#   machinery was removed entirely — runtime loading no longer runs package
+#   managers. The overlay is now a no-op passthrough but retained as the
+#   extension point for future downstream image customizations.
 
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE}
 
 # USER node, WORKDIR /app, ENV, HEALTHCHECK, CMD all inherited from base.
-# /var/lib/openclaw/plugin-runtime-deps is already created + owned by node:node.
-#
-# `plugins deps --repair` scans dist/extensions/ for all bundled plugin
-# manifests, collects their runtime deps, and pnpm-installs them into the
-# staging directory. Same flow the gateway runs on startup — but baked into
-# the image so every container starts with deps pre-materialized.
-RUN OPENCLAW_PLUGIN_STAGE_DIR=/var/lib/openclaw/plugin-runtime-deps \
-    node openclaw.mjs plugins deps --repair
+# No additional build steps needed on post-refactor upstream bases.
