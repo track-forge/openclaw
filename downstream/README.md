@@ -13,6 +13,11 @@ K8s deployment customizations that upstream doesn't support yet.
   pinned to an upstream tag. Carries only the cherry-picked patches from
   `downstream/main` that apply to that release. This is what we build and deploy.
 
+- **`downstream/v<version>xp<n>`** (e.g. `downstream/v2026.5.2xp0`) — experimental
+  branch cut from a green CI commit on upstream `main` when no official tag is
+  available yet. Used to pick up significant upstream changes (e.g. removal of
+  runtime dep install machinery) before the next release tag ships.
+
 ## Versioning
 
 Images and git tags use the format `v<upstream>-tf.<patch>`:
@@ -59,5 +64,10 @@ their status, and upstream PR links.
 - `plugins.bundledMode: "respect-allow"` for K8s deployments — gates runtime
   provider discovery by the allowlist instead of force-loading all bundled
   providers. Upstream PR: [#76085](https://github.com/openclaw/openclaw/pull/76085).
-- Liveness probe resilience for K8s deployments with heavy first-message
-  cold-start paths.
+- **`v2026.5.2xp0`**: experimental branch based on upstream `main` at
+  `336303e48b` (2026-05-02, CI green). Picks up the upstream refactor that
+  removed the runtime pnpm-install machinery entirely — no more EROFS on
+  `readOnlyRootFilesystem`, no startup network dependency, no lock contention.
+  The `OPENCLAW_SKIP_RUNTIME_DEPS_INSTALL` env var from
+  [track-forge/openclaw#4](https://github.com/track-forge/openclaw/issues/4)
+  is no longer needed on this base.
