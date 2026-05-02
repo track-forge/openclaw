@@ -944,6 +944,9 @@ function getCompatibleActivePluginRegistry(
 export function resolveRuntimePluginRegistry(
   options?: PluginLoadOptions,
 ): PluginRegistry | undefined {
+  if (options?.config?.downstream?.skipRuntimePluginDiscovery) {
+    return undefined;
+  }
   if (!options || !hasExplicitCompatibilityInputs(options)) {
     return getCompatibleActivePluginRegistry();
   }
