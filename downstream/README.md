@@ -38,19 +38,26 @@ Tag the release branch when cutting an image:
 See `build-image.sh --help` for options. Defaults to podman and the
 local registry at `stimsonmt.tail549b77.ts.net:5000/openclaw`.
 
+## Patch tracking
+
+See [`PATCHES.md`](PATCHES.md) for the full inventory of downstream patches,
+their status, and upstream PR links.
+
 ## Workflow
 
 1. Develop/fix on `downstream/main`.
 2. Cherry-pick relevant commits onto the active `downstream/v*` release branch.
 3. When a new upstream tag ships, create a new `downstream/v<tag>` branch from
-   that tag and cherry-pick the patch set forward.
+   that tag and cherry-pick the patch set forward (use `PATCHES.md` as the checklist).
 4. Tag and build: `git tag v<upstream>-tf.<n>` then `./downstream/build-image.sh --tag <tag> --push`.
 5. Contribute fixes upstream when possible to shrink the patch set over time.
+6. When an upstream PR lands, mark its patch as `upstreamed` in `PATCHES.md` and
+   drop it on the next rebase.
 
 ## Current focus
 
-- Runtime plugin discovery bypass for proxy-only providers (avoid 28s+ plugin
-  load on first message).
-- `plugins.enabled: false` respected in runtime provider discovery path.
+- `plugins.bundledMode: "respect-allow"` for K8s deployments — gates runtime
+  provider discovery by the allowlist instead of force-loading all bundled
+  providers. Upstream PR: [#76085](https://github.com/openclaw/openclaw/pull/76085).
 - Liveness probe resilience for K8s deployments with heavy first-message
   cold-start paths.
