@@ -32,8 +32,8 @@ Tag the release branch when cutting an image:
 
 ## Building images
 
-    git checkout downstream/v2026.4.29
-    ./downstream/build-image.sh --tag v2026.4.29-tf.1 --push
+    git checkout downstream/v2026.5.6
+    ./downstream/build-image.sh --tag v2026.5.6-tf.1 --push
 
 See `build-image.sh --help` for options. Defaults to podman and the
 local registry at `stimsonmt.tail549b77.ts.net:5000/openclaw`.
@@ -56,8 +56,12 @@ their status, and upstream PR links.
 
 ## Current focus
 
-- `plugins.bundledMode: "respect-allow"` for K8s deployments — gates runtime
-  provider discovery by the allowlist instead of force-loading all bundled
-  providers. Upstream PR: [#76085](https://github.com/openclaw/openclaw/pull/76085).
-- Liveness probe resilience for K8s deployments with heavy first-message
-  cold-start paths.
+- **Zero code patches** on `v2026.5.6` — all previous downstream code fixes
+  have been upstreamed:
+  - `plugins.bundledDiscovery: "allowlist"` (was our `bundledMode: "respect-allow"`)
+    landed in [#77194](https://github.com/openclaw/openclaw/pull/77194), included
+    since `v2026.5.5`.
+  - Runtime pnpm-install machinery removed in upstream refactor
+    [`ed8f50f240`](https://github.com/openclaw/openclaw/commit/ed8f50f240),
+    included since `v2026.5.2`. No more EROFS on `readOnlyRootFilesystem`.
+- Only downstream infra patches remain (README, build script, Dockerfile, PATCHES).
